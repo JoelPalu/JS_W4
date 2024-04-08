@@ -14,7 +14,7 @@ app.get('/api/v1/cats', (req, res) => {
     birthdate: '2015-05-20',
     weight: 4.2,
     owner: 'John Doe',
-    image: 'https://placekitten.com/200/300',
+    image: 'https://loremflickr.com/320/240/cat',
   };
   res.json(cat);
 });
@@ -22,3 +22,5 @@ app.get('/api/v1/cats', (req, res) => {
 app.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
+
+app.use('/public', express.static('public'));
