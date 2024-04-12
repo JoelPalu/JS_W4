@@ -27,7 +27,6 @@ const  createThumbnail = async (req, res, next) => {
     next()
     return;
   }
-
   const filepath = req.file.path
   const thumbnailPath = filepath + "_thumb.png";
   await sharp(filepath)

@@ -24,6 +24,10 @@ const storage = multer.diskStorage({
     if (file.mimetype === 'image/png') {
       extension = '.png';
     }
+    if (file.mimetype === 'image/jpeg') {
+      extension = '.jpg';
+    }
+
     cb(null, file.originalname + '-' + uniqueSuffix + extension);
   },
 });
