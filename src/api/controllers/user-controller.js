@@ -20,9 +20,17 @@ const getUserById = (req, res) => {
   }
 }
 
-const postUser = (req, res) => {
+const postUser = (req, res, next) => {
   req.body.password = bcrypt.hashSync(req.body.password, 10);
   const result = addUser(req.body);
+
+  if (!result){
+    const error = new Error('Invalid or missing fields');
+    error.status = 400;
+    next(error);
+    return;
+  }
+
   if (result.user_id) {
     res.status(201);
     res.json({message: 'New user added.', result});

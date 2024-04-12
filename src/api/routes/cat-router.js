@@ -9,8 +9,9 @@ import {
 import multer from 'multer';
 import {
   authenticateToken,
-  createThumbnail,
+  createThumbnail, validationErrors,
 } from '../../middlewares/middlewares.js';
+import {body} from 'express-validator';
 
 const catRouter = express.Router();
 
@@ -30,13 +31,28 @@ const storage = multer.diskStorage({
 
     cb(null, file.originalname + '-' + uniqueSuffix + extension);
   },
+
+  fileFilter: (req, file, cb) =>{
+    if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")){
+      cb(null, true);
+    } else {
+    const error = new Error("Only images and videos are supported");
+    error.status = 400;
+    cb(error);
+    }
+  }
 });
 
 const upload = multer({storage: storage});
 
 catRouter.route('/')
   .get(getCat)
-  .post(authenticateToken, upload.single('filename'), createThumbnail, postCat);
+  .post(authenticateToken,
+    upload.single('filename'),
+    body('cat_name').notEmpty(),
+    validationErrors,
+    createThumbnail,
+    postCat);
 
 catRouter.route('/:id')
   .get(getCatById)
