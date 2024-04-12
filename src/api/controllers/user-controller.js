@@ -2,7 +2,7 @@ import {
   listAllUsers,
   findUserById,
   addUser,
-  removeUser,
+  removeUser, updateUser,
 } from '../models/user-model.js';
 import bcrypt from 'bcrypt';
 import promisePool from '../../utils/database.js';
@@ -20,17 +20,21 @@ const getUserById = (req, res) => {
   }
 }
 
-const postUser = (req, res) => {
-  req.body.password = bcrypt.hashSync(req.body.password, 10);
-  const result = addUser(req.body);
-  if (result.user_id) {
-    res.status(201);
-    res.json({message: 'New user added.', result});
-    const sql = 'INSERT INTO users (name, username, email, role, password) VALUES (?, ?, ?, ?, ?)';
-    const params = [req.body.name, req.body.username, req.body.email, req.body.role, req.body.password];
-    promisePool.execute(sql, params);
-  } else {
-    res.sendStatus(400);
+const postUser = async (req, res) => {
+  try {
+    req.body.password = bcrypt.hashSync(req.body.password, 10);
+    const result = await addUser(req.body);
+    if (result.user_id) {
+      const sql = 'INSERT INTO users (name, username, email, role, password) VALUES (?, ?, ?, ?, ?)';
+      const params = [req.body.name, req.body.username, req.body.email, req.body.role, req.body.password];
+      await promisePool.execute(sql, params);
+      res.status(201);
+      res.json({message: 'New user added.', result});
+    } else {
+      res.status(400).json({message: 'Failed to add user. Check your input data.'});
+    }
+  } catch (error) {
+    res.status(500).json({message: 'Server error', error: error.message});
   }
 }
 

@@ -2,36 +2,20 @@ import express from 'express';
 import {
   getCat,
   getCatById,
+  getCatByOwner,
   postCat,
   putCat,
   deleteCat,
 } from '../controllers/cat-controller.js';
-import multer from 'multer';
+
 import {
   authenticateToken,
   createThumbnail,
 } from '../../middlewares/middlewares.js';
+import multer from 'multer';
+import {storage} from '../multer.js';
 
 const catRouter = express.Router();
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb){
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb){
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    let extension;
-    if (file.mimetype === 'image/png') {
-      extension = '.png';
-    }
-    if (file.mimetype === 'image/jpeg') {
-      extension = '.jpg';
-    }
-
-    cb(null, file.originalname + '-' + uniqueSuffix + extension);
-  },
-});
-
 const upload = multer({storage: storage});
 
 catRouter.route('/')
@@ -40,7 +24,9 @@ catRouter.route('/')
 
 catRouter.route('/:id')
   .get(getCatById)
-  .put(putCat)
+  .put(authenticateToken, putCat)
   .delete(deleteCat);
+
+catRouter.route('/user/:id').get(getCatByOwner);
 
 export default catRouter;

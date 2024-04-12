@@ -1,6 +1,6 @@
 import {
   addCat,
-  findCatById,
+  findCatById, findCatByOwner,
   listAllCats,
   modifyCat,
   removeCat,
@@ -19,6 +19,16 @@ const getCatById = async (req, res) => {
   }
 };
 
+export const getCatByOwner = async (req, res) => {
+  const cat = await findCatByOwner(req.params.id);
+  if (cat) {
+    res.json(cat);
+  } else {
+    res.sendStatus(404);
+  }
+
+}
+
 
 const sanitizeCatObject = (cat) => {
   for (const key in cat) {
@@ -36,23 +46,25 @@ const postCat = async (req, res) => {
   console.log('file', req.file)
   if (result.cat_id) {
     res.status(200);
-    const cat = await findCatById(result.cat_id);
+    const cat = await findCatById(result.cat_id, req.body.owner);
     res.json({message: 'New cat added.', result: cat});
   } else {
     res.sendStatus(400);
   }
 };
 
-const putCat = (req, res) => {
-  updateCat(req.body, req.params.id);
+const putCat = async (req, res) => {
+  const result = await modifyCat(req.body, req.params.id, req.locals.user.id)
   res.status(201);
   res.json({message: 'Cat item id: ' + req.params.id + " updated"});
+  res.json(result);
 };
 
-const deleteCat = (req, res) => {
-  removeCat(req.params.id);
+const deleteCat = async (req, res) => {
+  const result = await removeCat(req.params.id);
   res.status(200);
   res.json({message: 'Cat item id: ' + req.params.id + " deleted"});
+  res.json(result);
 };
 
 export {getCat, getCatById, postCat, putCat, deleteCat};
