@@ -1,3 +1,5 @@
+import promisePool from '../../utils/database.js';
+
 const userItems = [
   {
     user_id: 3609,
@@ -58,4 +60,15 @@ const removeUser = (id) => {
 
 }
 
-export {listAllUsers, findUserById, addUser, updateUser, removeUser};
+const getUserByUsername = async (username) =>{
+  const sql =  'SELECT * ' +
+                      'FROM users ' +
+                      'WHERE username = ?';
+  const [rows] = await promisePool.execute(sql, [username]);
+  if (rows.length === 0){
+    return false;
+  }
+  return rows[0];
+}
+
+export {listAllUsers, findUserById, addUser, updateUser, removeUser, getUserByUsername};

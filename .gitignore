@@ -7,6 +7,10 @@
 .AppleDouble
 .LSOverride
 
+# Uploaded files
+uploads/*
+!uploads/.gitkeep
+
 # Icon must end with two \r
 Icon
 

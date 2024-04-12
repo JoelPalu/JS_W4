@@ -6,10 +6,13 @@ import {
   putUser,
   deleteUser
 } from '../controllers/user-controller.js';
+import multer from 'multer';
 
 const userRouter = express.Router();
 
-userRouter.route('/').get(getUser).post(postUser);
+const upload = multer();
+
+userRouter.route('/').get(getUser).post(upload.single('file'), postUser);
 
 userRouter.route('/:id').get(getUserById).put(putUser).delete(deleteUser);
 
