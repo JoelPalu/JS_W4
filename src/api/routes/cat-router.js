@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getCat,
   getCatById,
+  getCatByOwner,
   postCat,
   putCat,
   deleteCat,
@@ -12,6 +13,8 @@ import {
   createThumbnail, validationErrors,
 } from '../../middlewares/middlewares.js';
 import {body} from 'express-validator';
+import multer from 'multer';
+import {storage} from '../multer.js';
 
 const catRouter = express.Router();
 
@@ -56,7 +59,9 @@ catRouter.route('/')
 
 catRouter.route('/:id')
   .get(getCatById)
-  .put(putCat)
-  .delete(deleteCat);
+  .put(authenticateToken, putCat)
+  .delete(authenticateToken, deleteCat);
+
+catRouter.route('/user/:id').get(getCatByOwner);
 
 export default catRouter;

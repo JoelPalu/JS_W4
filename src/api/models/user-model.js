@@ -1,63 +1,86 @@
 import promisePool from '../../utils/database.js';
 
-const userItems = [
-  {
-    user_id: 3609,
-    name: 'John Doe',
-    username: 'johndoe',
-    email: 'john@metropolia.fi',
-    role: 'user',
-    password: 'password',
-  },
-{
-    user_id: 3602,
-    name: 'Jane Doe',
-    username: 'janedoe',
-    email: 'jane@metropolia.fi',
-    role: 'user',
-    password: 'password',
-  },
-  {
-    user_id: 3601,
-    name: 'Admin',
-    username: 'admin',
-    email: 'adminno@metropolia.fi',
-    role: 'admin',
-    password: 'password',
-  },
-];
-
-const listAllUsers = () => {
-  return userItems;
+const listAllUsers = async () => {
+  const [rows] = await promisePool.query('SELECT * FROM users');
+  console.log('rows', rows);
+  return rows;
 };
 
-const findUserById = (id) => {
-  return userItems.find((item) => item.user_id == id);
+const findUserById = async (id) => {
+  const [rows] = await promisePool.execute('SELECT * FROM users WHERE user_id = ?', [id]);
+  console.log('rows', rows);
+  if (rows.length === 0) {
+    return false;
+  }
+  return rows[0];
 };
 
-const addUser = (user) => {
+const addUser = async (user) => {
+  user = {
+    name: user.name !== undefined ? user.name : null,
+    username: user.username !== undefined ? user.username : null,
+    email: user.email !== undefined ? user.email : null,
+    role: user.role !== undefined ? user.role : null,
+    password: user.password !== undefined ? user.password : null
+  };
   const {name, username, email, role, password} = user;
-  const newId = userItems[0].user_id + 1;
-  userItems.unshift({user_id: newId, name, username, email, role, password});
-  return {user_id: newId};
+  const sql = `INSERT INTO users (name, username, email, role, password)
+               VALUES (?, ?, ?, ?, ?)`;
+  const params = [name, username, email, role, password];
+  const [result] = await promisePool.execute(sql, params);
+
+  const [rows] = await promisePool.execute('SELECT * FROM users WHERE user_id = ?', [result.insertId]);
+  if (rows.length === 0) {
+    return false;
+  }
+  return rows[0];
 };
 
-const updateUser = (user, id) => {
-  const tuser = findUserById(id);
-  const {user_id, name, username, email, role, password} = user;
-  const index = userItems.findIndex((item) => item.user_id == tuser.user_id);
+const updateUser = async (data, id, user) => {
 
-  Object.keys(user).forEach((key) => {
-    if (user[key] !== null) {
-      userItems[index][key] = user[key];
+  const tuser = await findUserById(id);
+  console.log('data', data);
+  console.log('Before tuser', tuser);
+  if (tuser.user_id !== user.user_id) {
+    return false;
+  }
+  for (const key in tuser) {
+    if (data[key] !== undefined){
+       tuser[key] = data[key];
     }
-  });
+  }
+  console.log('After tuser', tuser);
+  let sql = promisePool.format(
+    `UPDATE users SET ? WHERE user_id = ?`,
+    [tuser, id]
+  );
+
+  const rows = await promisePool.execute(sql);
+  console.log('rows', rows);
+  if (rows[0].affectedRows === 0) {
+    return false;
+  }
+  return {message: 'success'};
 }
 
-const removeUser = (id) => {
-  const index = userItems.findIndex((item) => item.user_id == id);
-  userItems.splice(index, 1);
+const removeUser = async (id, user) => {
+  console.log('user', user, id);
 
+  if (Number(user.user_id) !== Number(id) && user.role !== 'admin') {
+    return {message: 'Unauthorized'};
+  }
+
+  let sql = promisePool.format(
+    `DELETE FROM users WHERE user_id = ?`,
+    [id]
+  );
+
+  const [result] = await promisePool.execute(sql);
+  console.log('result', result);
+  if (result.affectedRows === 0) {
+    return {message: 'User removed successfully'};
+  }
+  return {message: 'User removed successfully'};
 }
 
 const getUserByUsername = async (username) =>{

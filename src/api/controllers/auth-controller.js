@@ -29,6 +29,10 @@ const postLogin = async (req, res) => {
   res.json({user: user, token});
 };
 
+const getLogOut = async (req, res) => {
+  res.json({message: 'logged out'});
+
+};
 
 const getMe = async (req, res) => {
   console.log('getMe', res.locals.user);
@@ -39,4 +43,4 @@ const getMe = async (req, res) => {
   }
 };
 
-export {postLogin,getMe};
+export {postLogin,getMe ,getLogOut};

@@ -4,13 +4,24 @@ import promisePool from '../../utils/database.js';
 
 
 const listAllCats = async () => {
-  const [rows] = await promisePool.query('SELECT * FROM cats');
+  const [rows] = await promisePool.execute(`
+    SELECT cats.*, users.name AS owner_name
+    FROM cats
+    JOIN users ON cats.owner = users.user_id
+  `);
+
   console.log('rows', rows);
   return rows;
 };
 
 const findCatById = async (id) => {
-  const [rows] = await promisePool.execute('SELECT * FROM cats WHERE cat_id = ?', [id]);
+  const [rows] = await promisePool.execute(
+    `SELECT cats.*, users.name AS owner_name
+    FROM cats
+    JOIN users ON cats.owner = users.user_id
+    WHERE cat_id = ?
+  `, [id]);
+
   console.log('rows', rows);
   if (rows.length === 0) {
     return false;
@@ -18,7 +29,23 @@ const findCatById = async (id) => {
   return rows[0];
 };
 
-const addCat = async (cat, file) => {
+const findCatByOwner = async (id) => {
+  const [rows] = await promisePool.execute(
+    `SELECT *
+    FROM cats
+    WHERE owner = ?
+  `, [id]);
+
+  console.log('rows', rows);
+  if (rows.length === 0) {
+    return false;
+  }
+  return rows;
+
+}
+
+const addCat = async (cat, file, user) => {
+  console.log('cat', cat);
   cat = {
     cat_name: cat.cat_name !== undefined ? cat.cat_name : null,
     weight: cat.weight !== undefined ? cat.weight : null,
@@ -26,6 +53,12 @@ const addCat = async (cat, file) => {
     filename: file.filename !== undefined ? file.filename : null,
     birthdate: cat.birthdate !== undefined ? cat.birthdate : null
   };
+
+  if (user.role !== 'admin') {
+    cat.owner = user.user_id;
+  }else if (cat.owner === null) {
+    cat.owner = user.user_id;
+  }
 
   console.log('cat', cat.cat_name, cat.weight, cat.owner, cat.filename, cat.birthdate);
   const sql = `INSERT INTO cats (cat_name, weight, owner, filename, birthdate)
@@ -39,12 +72,31 @@ const addCat = async (cat, file) => {
   return {cat_id: rows[0].insertId};
 };
 
-const modifyCat = async (cat, id, user) => {
+const putOwner = async (cat, tcat, user) => {
+  if (tcat.owner !== user.user_id && user.role !== 'admin') {
+    return cat;
+  }else{
+    cat.owner = Number(user.user_id);
+    return cat;
+  }
+};
 
-  if(user.role == 'admin'){
+const modifyCat = async (cat, id, user) => {
+  const tcat = await findCatById(id);
+  cat = await putOwner(cat, tcat, user);
+  console.log('cat', cat);
+
+  let sql = promisePool.format(
+    `UPDATE cats SET ? WHERE cat_id = ?`,
+    [cat, id] // use the filtered updateProperties object
+  );
+
+  if (user.role === 'admin') {
+    sql = promisePool.format(
+      `UPDATE cats SET ? WHERE cat_id = ?`,
+      [cat, id]);
   }
 
-  const sql = promisePool.format(`UPDATE cats SET ? WHERE cat_id = ?`, [cat, id]);
   const rows = await promisePool.execute(sql);
   console.log('rows', rows);
   if (rows[0].affectedRows === 0) {
@@ -53,11 +105,16 @@ const modifyCat = async (cat, id, user) => {
   return {message: 'success'};
 };
 
+const removeCat = async (id, user) => {
+  let sql = promisePool.format(
+    `DELETE FROM cats WHERE cat_id = ? AND owner = ?`,
+    [id, user.user_id]
+  );
+  if (user.role === 'admin') {
+    sql = promisePool.format(`DELETE FROM cats WHERE cat_id = ?`, [id]);
+  }
 
-
-
-const removeCat = async (id) => {
-  const [rows] = await promisePool.execute('DELETE FROM cats WHERE cat_id = ?', [id]);
+  const [rows] = await promisePool.execute(sql);
   console.log('rows', rows);
   if (rows.affectedRows === 0) {
     return false;
@@ -65,7 +122,7 @@ const removeCat = async (id) => {
   return {message: 'success'};
 };
 
-export {listAllCats, findCatById, addCat, modifyCat, removeCat};
+export {listAllCats, findCatById, findCatByOwner, addCat, modifyCat, removeCat};
 /**
 /*
 // mock data

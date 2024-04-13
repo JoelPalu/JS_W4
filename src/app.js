@@ -5,10 +5,12 @@ import {
   notFoundHandler,
   validationErrors,
 } from './middlewares/middlewares.js';
+import cors from 'cors';
 
 const hostname = '127.0.0.1';
 const app = express();
 const port = 3000;
+app.use(cors());
 
 app.use('/public', express.static('public'));
 
@@ -19,7 +21,6 @@ app.use('/api/v1', api);
 app.use(notFoundHandler);
 app.use(validationErrors);
 app.use(errorHandler);
-
 
 app.get('/', (req, res) => {
   res.send('Welcome to my REST API!');
