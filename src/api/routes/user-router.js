@@ -19,6 +19,6 @@ const upload = multer({storage: storage});
 
 userRouter.route('/').get(getUser).post(upload.single('file'),createThumbnail, postUser);
 
-userRouter.route('/:id').get(getUserById).put(putUser).delete(deleteUser);
+userRouter.route('/:id').get(getUserById).put(authenticateToken, putUser).delete(authenticateToken, deleteUser);
 
 export default userRouter;

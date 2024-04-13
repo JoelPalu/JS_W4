@@ -36,12 +36,13 @@ const sanitizeCatObject = (cat) => {
       cat[key] = null;
     }
   }
+
   return cat;
 };
 
 const postCat = async (req, res) => {
   const sanitizedBody = sanitizeCatObject(req.body);
-  const result = await addCat(sanitizedBody, req.file);
+  const result = await addCat(sanitizedBody, req.file, res.locals.user);
   console.log('result', req.body)
   console.log('file', req.file)
   if (result.cat_id) {
@@ -54,17 +55,15 @@ const postCat = async (req, res) => {
 };
 
 const putCat = async (req, res) => {
-  const result = await modifyCat(req.body, req.params.id, req.locals.user.id)
+  const result = await modifyCat(req.body, req.params.id, res.locals.user)
   res.status(201);
-  res.json({message: 'Cat item id: ' + req.params.id + " updated"});
-  res.json(result);
+  res.json({message: 'Cat item id: ' + req.params.id + " updated", result: result});
 };
 
 const deleteCat = async (req, res) => {
-  const result = await removeCat(req.params.id);
+  const result = await removeCat(req.params.id, res.locals.user);
   res.status(200);
-  res.json({message: 'Cat item id: ' + req.params.id + " deleted"});
-  res.json(result);
+  res.json({message: 'Cat item id: ' + req.params.id + " deleted", result: result});
 };
 
 export {getCat, getCatById, postCat, putCat, deleteCat};

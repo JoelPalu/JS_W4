@@ -7,7 +7,7 @@ const listAllCats = async () => {
   const [rows] = await promisePool.execute(`
     SELECT cats.*, users.name AS owner_name
     FROM cats
-    JOIN users ON cats.owner = users.id
+    JOIN users ON cats.owner = users.user_id
   `);
 
   console.log('rows', rows);
@@ -44,7 +44,8 @@ const findCatByOwner = async (id) => {
 
 }
 
-const addCat = async (cat, file) => {
+const addCat = async (cat, file, user) => {
+  console.log('cat', cat);
   cat = {
     cat_name: cat.cat_name !== undefined ? cat.cat_name : null,
     weight: cat.weight !== undefined ? cat.weight : null,
@@ -52,6 +53,12 @@ const addCat = async (cat, file) => {
     filename: file.filename !== undefined ? file.filename : null,
     birthdate: cat.birthdate !== undefined ? cat.birthdate : null
   };
+
+  if (user.role !== 'admin') {
+    cat.owner = user.user_id;
+  }else if (cat.owner === null) {
+    cat.owner = user.user_id;
+  }
 
   console.log('cat', cat.cat_name, cat.weight, cat.owner, cat.filename, cat.birthdate);
   const sql = `INSERT INTO cats (cat_name, weight, owner, filename, birthdate)
@@ -65,11 +72,23 @@ const addCat = async (cat, file) => {
   return {cat_id: rows[0].insertId};
 };
 
+const putOwner = async (cat, tcat, user) => {
+  if (tcat.owner !== user.user_id && user.role !== 'admin') {
+    return cat;
+  }else{
+    cat.owner = Number(user.user_id);
+    return cat;
+  }
+};
+
 const modifyCat = async (cat, id, user) => {
+  const tcat = await findCatById(id);
+  cat = await putOwner(cat, tcat, user);
+  console.log('cat', cat);
 
   let sql = promisePool.format(
-    `UPDATE cats SET ? WHERE cat_id = ? AND owner = ?`,
-    [cat, id, user.user_id]
+    `UPDATE cats SET ? WHERE cat_id = ?`,
+    [cat, id] // use the filtered updateProperties object
   );
 
   if (user.role === 'admin') {

@@ -36,20 +36,23 @@ const addUser = async (user) => {
   return rows[0];
 };
 
-const updateUser = async (user, id) => {
+const updateUser = async (data, id, user) => {
 
-  const tuser = findUserById(id);
-  const index = userItems.findIndex((item) => item.user_id == tuser.user_id);
-
-  Object.keys(user).forEach((key) => {
-    if (user[key] !== null) {
-      userItems[index][key] = user[key];
+  const tuser = await findUserById(id);
+  console.log('data', data);
+  console.log('Before tuser', tuser);
+  if (tuser.user_id !== user.user_id) {
+    return false;
+  }
+  for (const key in tuser) {
+    if (data[key] !== undefined){
+       tuser[key] = data[key];
     }
-  });
-
+  }
+  console.log('After tuser', tuser);
   let sql = promisePool.format(
     `UPDATE users SET ? WHERE user_id = ?`,
-    [user, id]
+    [tuser, id]
   );
 
   const rows = await promisePool.execute(sql);
@@ -60,10 +63,24 @@ const updateUser = async (user, id) => {
   return {message: 'success'};
 }
 
-const removeUser = async (id) => {
-  const index = userItems.findIndex((item) => item.user_id == id);
-  userItems.splice(index, 1);
+const removeUser = async (id, user) => {
+  console.log('user', user, id);
 
+  if (Number(user.user_id) !== Number(id) && user.role !== 'admin') {
+    return {message: 'Unauthorized'};
+  }
+
+  let sql = promisePool.format(
+    `DELETE FROM users WHERE user_id = ?`,
+    [id]
+  );
+
+  const [result] = await promisePool.execute(sql);
+  console.log('result', result);
+  if (result.affectedRows === 0) {
+    return {message: 'User removed successfully'};
+  }
+  return {message: 'User removed successfully'};
 }
 
 const getUserByUsername = async (username) =>{

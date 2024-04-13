@@ -25,9 +25,6 @@ const postUser = async (req, res) => {
     req.body.password = bcrypt.hashSync(req.body.password, 10);
     const result = await addUser(req.body);
     if (result.user_id) {
-      const sql = 'INSERT INTO users (name, username, email, role, password) VALUES (?, ?, ?, ?, ?)';
-      const params = [req.body.name, req.body.username, req.body.email, req.body.role, req.body.password];
-      await promisePool.execute(sql, params);
       res.status(201);
       res.json({message: 'New user added.', result});
     } else {
@@ -38,17 +35,17 @@ const postUser = async (req, res) => {
   }
 }
 
-const putUser = (req, res) => {
-  updateUser(req.body, req.params.id);
+const putUser = async (req, res) => {
+  await updateUser(req.body, req.params.id, res.locals.user);
   res.status(200)
   res.json({message: 'User: ' + req.params.id + ' updated.'});
 
 }
 
-const deleteUser = (req, res) => {
-  removeUser(req.params.id);
+const deleteUser = async (req, res) => {
+  const response = await removeUser(req.params.id, res.locals.user);
   res.status(200);
-  res.json({message: 'User: ' + req.params.id + ' removed.'});
+  res.json({'response': response.message});
 }
 
 export {getUser, getUserById, postUser, putUser, deleteUser}
