@@ -7,14 +7,12 @@ import {
   putCat,
   deleteCat,
 } from '../controllers/cat-controller.js';
-import multer from 'multer';
 import {
   authenticateToken,
   createThumbnail, validationErrors,
 } from '../../middlewares/middlewares.js';
 import {body} from 'express-validator';
 import multer from 'multer';
-import {storage} from '../multer.js';
 
 const catRouter = express.Router();
 
@@ -53,15 +51,30 @@ catRouter.route('/')
   .post(authenticateToken,
     upload.single('filename'),
     body('cat_name').notEmpty(),
+    body('weight').notEmpty(),
+    body('birthdate').isDate(),
+    body('owner').isAlphanumeric(),
     validationErrors,
     createThumbnail,
     postCat);
 
 catRouter.route('/:id')
-  .get(getCatById)
-  .put(authenticateToken, putCat)
-  .delete(authenticateToken, deleteCat);
+  .get(
+    validationErrors,
+    getCatById)
+  .put(authenticateToken,
+    body('cat_name').optional().notEmpty(),
+    body('weight').optional().notEmpty(),
+    body('birthdate').optional().isDate(),
+    body('owner').optional().isAlphanumeric(),
+    validationErrors,
+    putCat)
+  .delete(authenticateToken,
+    validationErrors,
+    deleteCat);
 
-catRouter.route('/user/:id').get(getCatByOwner);
+catRouter.route('/user/:id').get(
+  validationErrors,
+  getCatByOwner);
 
 export default catRouter;
